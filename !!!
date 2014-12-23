@@ -1,0 +1,48 @@
+from django.shortcuts import render
+from django.http import HttpResponse
+import hashlib, time, re
+from xml.etree import ElementTree as ET
+from django.utils.datastructures import MultiValueDictKeyError
+import logging
+
+# Create your views here.
+def weixin(request):
+    logging.debug("heelo")
+    token = "mytoken"
+    params = request.GET
+    try:
+        args = [token, params['timestamp'], params['nonce']]
+    except MultiValueDictKeyError:
+        logging.debug("Some error")
+        return HttpResponse('Some error')
+    args.sort()
+    if hashlib.sha1("".join(args)).hexdigest() == params['signature']:
+        logging.debug("a1")
+        if params.has_key('echostr'):
+            logging.debug("a2")
+            logging.debug(params['echostr'])
+            return HttpResponse(params['echostr'])
+        else:
+#            logging.debug("a3")
+                reply = """<xml>
+	    <ToUserName><![CDATA[%s]]></ToUserName>
+            <FromUserName><![CDATA[%s]]></FromUserName>
+                        <CreateTime>%s</CreateTime>
+                        <MsgType><![CDATA[text]]></MsgType>
+                        <Content><![CDATA[%s]]></Content>
+                        <FuncFlag>0</FuncFlag>
+                </xml>"""
+		if request.raw_post_data:
+			xml = ET.fromstring(request.raw_post_data)
+			content = xml.find("Content").text
+			fromUserName = xml.find("ToUserName").text
+			toUserName = xml.find("FromUserName").text
+			postTime = str(int(time.time()))
+			if not content:
+			    return HttpResponse(reply % (toUserName, fromUserName, postTime, "Please input command"))
+			if content == "Hello2BizUser":
+			    return HttpResponse(reply % (toUserName, fromUserName, postTime, "Hello to BizUser"))
+			else:
+			    return HttpResponse(reply % (toUserName, fromUserName, postTime, "Function is under develop"))
+    else:
+        return HttpResponse("Invalid request")
