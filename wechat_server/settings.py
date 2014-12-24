@@ -13,6 +13,9 @@ import os
 import logging
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
+APP_DIR = os.path.dirname(globals()['__file__'])
+DBNAME = 'wechat_db'
+
 #logging.basicConfig(
 #    level = logging.DEBUG,
 #    format = '%(asctime)s %(levelname)s %(message)s',
@@ -106,8 +109,8 @@ WSGI_APPLICATION = 'wechat_server.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+#        'ENGINE': 'django.db.backends.sqlite3',
+#        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
 }
 

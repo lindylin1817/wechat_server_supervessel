@@ -5,13 +5,18 @@ from xml.etree import ElementTree as ET
 from django.utils.datastructures import MultiValueDictKeyError
 import logging
 from django.views.decorators.csrf import csrf_exempt
-
-
-#import django.utils.log import logger
+from models import Users
+import httplib
+import numpy as np
+import matplotlib
+from matplotlib.pyplot import plot, savefig
 from .basic import *
 
 # Create your views here.
-
+matplotlib.use('Agg')
+key_file = "./files/key_file.txt"
+cert_file = "./files/cert_file.txt"
+image_file = "./files/tmp_image.png"
 logger = logging.getLogger('django')
 token = "mytoken"
 signature = "f24649c76c3f3d81b23c033da95a7a30cb7629cc"
@@ -66,21 +71,97 @@ def weixin(request):
         xml = ET.fromstring(request.body)
 	content = xml.find("Content").text
         fromUserName = xml.find("ToUserName").text
+        logger.info("ToUser:" + fromUserName)
 	toUserName = xml.find("FromUserName").text
+        logger.info("FromUser: " + toUserName)
 	postTime = str(int(time.time()))
 	if not content:
 	    return HttpResponse(reply % (
 		toUserName, fromUserName, postTime, "Please input command"))
 	if content == "a":
 	    return HttpResponse(reply % (
-		toUserName, fromUserName, postTime, "Hello to BizUser"))
+		toUserName, fromUserName, postTime, "Our website: http://ptopenlab.com"))
+	if content == "B":
+	    users_list=get_users_info()
+	    if check_new_user(fromUserName):
+	        return HttpResponse(reply % (
+		    toUserName, fromUserName, postTime, 
+		    "Please tell us your email address registered "
+		    +"in SuperVessel cloud via wechat message."))
+	    else:
+		cur_user=Users.objects(wechat_user_id=fromUserName).first()
+		cur_supervessel_account=cur_user.supervessel_account
+		if not cur_supervessel_account:
+  		    return HttpResponse(reply % (
+		        toUserName, fromUserName, postTime, 
+		        "Your email account is empty. Please send us your"
+			+" email registred in supervessel cloud. Then you"
+			+" could get further value-added services"
+                    ))
+      		else:
+	 	    return HttpResponse(reply % (
+		        toUserName, fromUserName, postTime, 
+		        "Your email account is "
+			+cur_supervessel_account
+			+" . If you want to update it, please send us"
+			+" the email address in message again")
+                    )
+ 	    
+        if content == "C":
+	    generate_image(image_file)
+
+	if content.find('@'):
+	    check_new_user(fromUserName)
+	    add_supervessel_account(fromUserName, content)    
+            return HttpResponse(reply % (
+		    toUserName, fromUserName, postTime, 
+		    "We updated your email address with "+content))	    
+	
 	else:
 	    return HttpResponse(reply % (
-		toUserName, fromUserName, postTime, "Function is under develop"))
+		toUserName, fromUserName, postTime, "Welcome to SuperVessel"))
     else:
 	return HttpResponse("invalid request")
 
- 
+def check_new_user(wechat_u_id):
+    this_user = Users.objects(wechat_user_id=wechat_u_id)
+    if not this_user:
+	this_user = Users(wechat_user_id = wechat_u_id)
+	this_user.save()
+	logger.info("Added new user")
+        return True
+    else:
+	logger.info("Exiting User")
+	return False
+
+def add_supervessel_account(wechat_u_id, content):
+    Users.objects(wechat_user_id=wechat_u_id).update_one(set__supervessel_account=content)
+
+def get_users_info():
+    headers = {"Content-type": "application/x-www-form-urlencoded",
+            "Accept": "application/json",
+	    "Content-type":"application/xml; charset=utf=8"}
+    conn = httplib.HTTPSConnection("www.ptopenlab.com",443,key_file,cert_file,True,10)
+    conn.request("GET","/cloudlab/api/user/account","",headers)
+    response = conn.getresponse()
+    logger.info("Return code:"+ str(response.status)+ " reason:"
+	    + response.reason)
+    if response.status == 200:
+        data = response.read()
+	logger.info(data)
+#        users_list = json.loads(data)
+#        logger.info(users_list[0])
+#	return users_list
+	return 0
+    else:
+        logger.info("Error sending message,check your account")
+
+def generate_image(image_file):
+    logger.info("to generate image "+image_file)
+    x = np.linspace(-4,4,30)
+    y = np.sin(x)
+    plot(x, y, '--*b')
+    savefig(image_file)
 
 
 """
