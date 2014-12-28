@@ -24,6 +24,10 @@ DBNAME = 'wechat_db'
 #)
 
 
+CRONJOBS = [
+    ('5/* * * * *', 'wechat_server.response.cron.my_scheduled_job'),
+]
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': True,
@@ -45,17 +49,17 @@ LOGGING = {
 	    'class': 'logging.StreamHandler',
 	    'formatter': 'simple',
         },
-#    'file': {
-#	'level': 'INFO',
-#	'class': 'logging.FileHandler',
-#	'formatter': 'simple',
-#	'filename': '/tmp/wechat_server.log'),
-#	'mode': 'a',
-#        },
+    'file': {
+	'level': 'INFO',
+	'class': 'logging.FileHandler',
+	'formatter': 'simple',
+	'filename': '/tmp/wechat_server.log',
+	'mode': 'a',
+        },
     },
     'loggers': {
         'django': {
-            'handlers': ['console'],
+            'handlers': ['console', 'file'],
 	    'level':'INFO',
 	    'propagate': True,
 	},
@@ -86,6 +90,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_crontab',
     'response',
 )
 
