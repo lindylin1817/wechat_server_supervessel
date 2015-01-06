@@ -25,7 +25,8 @@ DBNAME = 'wechat_db'
 
 
 CRONJOBS = [
-    ('5/* * * * *', 'wechat_server.response.cron.my_scheduled_job'),
+    ('0 */1 * * *', 'django.core.management.call_command', ['mycommand']),
+    ('0 */1 * * *', 'django.core.management.call_command', ['get_access_token']),
 ]
 
 LOGGING = {
