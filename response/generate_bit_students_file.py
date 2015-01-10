@@ -6,7 +6,7 @@ from models import Users, virtualmachines
 from mongoengine import Q
 import logging
 
-master_name = "master_node\n"
+master_name = "master_node"
 slave_prefix = "slave_node_"
 num_slave = 3
 
@@ -60,7 +60,7 @@ def gen_students_xls(students_file_xls):
 
 	    for i in range(num_slave):
 
-	        slave_name = slave_prefix + str(i+1) + "\n"
+	        slave_name = slave_prefix + str(i+1)
 	        the_slave = virtualmachines.objects(Q(vm_name=slave_name) & Q(supervessel_account=master_node['supervessel_account'])).first()
                 val_cpu = int(the_slave.cpu_usage_list[-1]/24.0/3600.0*100)
 	        val_network = the_slave.network_usage_list[-1]

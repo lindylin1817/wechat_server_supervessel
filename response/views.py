@@ -1,6 +1,7 @@
 #!/usr/bin/python
 #encoding:utf-8
 import sys
+import os
 from django.shortcuts import render
 from django.http import HttpResponse
 import hashlib, time, re
@@ -22,6 +23,8 @@ import re
 from django.contrib import auth
 import generate_bit_students_file
 import send_email
+from get_info_user import get_cur_cpu_usage
+from generate_figure import generate_days_trend_curve,generate_cur_cpu_bar
 
 # Create your views here.
 matplotlib.use('Agg')
@@ -32,6 +35,7 @@ cert_file = "./files/cert_file.pem"
 bit_students_file_xls = "./files/bit_students_file.xls"
 
 image_file_path = "./files/"
+no_vm_running_image = image_file_path + "no_vm_running.png"
 logger = logging.getLogger('django')
 wechat_token = "mytoken"
 signature = "f24649c76c3f3d81b23c033da95a7a30cb7629cc" #for Wechat
@@ -87,7 +91,7 @@ def weixin(request):
         fromUserName = xml.find("ToUserName").text
         logger.info("ToUser:" + fromUserName)
 	toUserName = xml.find("FromUserName").text
-        logger.info("FromUser: " + toUserName)
+#        logger.info("FromUser: " + toUserName)
 	postTime = str(int(time.time()))
 	if not content:
 	    check_new_user(toUserName)
@@ -209,10 +213,14 @@ def weixin(request):
 			    +" 如果您是新用户，请直接进入 http://ptopenlab.com")
   		    return HttpResponse(reply_msg)
       		else:
-		    users_list=get_users_info()
-	            put_users_memcache(users_list, mc)
-		    cur_user = mc.get(str(cur_supervessel_account))
-	
+#		    users_list=get_users_info()
+#	            put_users_memcache(users_list, mc)
+		    try:
+		        cur_user = mc.get(str(cur_supervessel_account))
+		    except:
+			cur_user = False
+			logger.info("User input has some problem")
+
 		    if cur_user:
 			logger.info(toUserName + " have registered")
                         active_image_file = image_file_path + toUserName + postTime + ".png"
@@ -268,15 +276,10 @@ def add_account_property(wechat_u_id, property_str):
     this_user = Users.objects(wechat_user_id=wechat_u_id).first()
     Users.objects(wechat_user_id=wechat_u_id).update_one(
 		set__user_property=property_str)
-    logger.info("Add the account " + this_user.supervessel_account + " into " + property_str + " group")
+    logger.info("Add the account " + wechat_u_id + " into " + property_str + " group")
 
 
 def get_users_info():
-#    headers = {"Content-type": "application/x-www-form-urlencoded",
-#            "Accept": "application/json",
-#	    "Content-type":"application/xml; charset=utf=8"}
-#    conn = httplib.HTTPSConnection("www.ptopenlab.com",443,key_file,cert_file,
-#		timeout=10.0 )
     try:
         request = urllib2.Request(
 		"https://www.ptopenlab.com/cloudlab/api/user/account")
@@ -318,19 +321,7 @@ def put_users_memcache(users_info, memCache):
     for user_info_json in users_info_json:
 	memCache.set(str(user_info_json["username"]), user_info_json)
 
-def generate_image(image_file, x_range, y_array):
-    fig = plt.figure(figsize=(3,1.75))
-    fig.suptitle('Active level in 9 days', fontsize=8)
-    plt.xlabel('date', fontsize=3)
-    plt.ylabel('seconds', fontsize=3)
-    plt.xticks(fontsize=5)
-    plt.yticks(fontsize=5)
-#    x_array = np.linspace(-3,3,10)
-#    y = np.sin(x)
-    x_array = np.linspace(1,x_range,x_range)
-#    logger.info(str(x_array))
-    plt.plot(x_array, y_array, '--*r')    
-    fig.savefig(image_file)
+# This is the activity trend curve of past number of days of an user
 
 def show_image(request, param1):
     image_file_name = image_file_path + param1 + ".png"
@@ -347,7 +338,7 @@ def gen_user_news(toUserName, fromUserName, postTime, description):
 	    title, description, picUrl)
     return reply_msg
 
-def gen_news_description(current_user, active_image_file):
+def gen_news_description(current_user, image_file):
     bluepoints = current_user['balance']
     description = "您有 " + str(bluepoints) + " 个蓝点.\n"
     num_vm = len(virtualmachines.objects(
@@ -367,7 +358,18 @@ def gen_news_description(current_user, active_image_file):
 #        logger.info(description)
 #    logger.info(str(active_list))
 #    logger.info(active_image_file)
-    generate_image(active_image_file, num_days, active_list)
+
+#    generate_days_trend_curve(image_file, num_days, active_list)
+    result = get_cur_cpu_usage(current_user['username'])
+    logger.info(result)
+    if (result):
+        cpu_usage_list = result['cpu_usage_list'][0]
+        name_list = result['name_list'][0]
+        generate_cur_cpu_bar(image_file, name_list, cpu_usage_list)
+    else:
+        cmd = "cp " + no_vm_running_image + " " + image_file
+        os.system(cmd)
+	logger.info(cmd)
     return description
 
 """
