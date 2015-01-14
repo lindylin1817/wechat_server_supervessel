@@ -192,7 +192,8 @@ def weixin(request):
 	    add_supervessel_account(toUserName, content)    
 	    reply_msg = generate_message.gen_msg_txt(
 		    toUserName, fromUserName, postTime, 
-		    "我们已经把您的邮箱地址更新为："+content)	    
+		    "我们已经把您的邮箱地址更新为："+content
+		    + " . 您向我们发送任意字符，就可以查看在SuperVessel云平台上面的资源使用情况。")	    
             return HttpResponse(reply_msg)	    
 	
 	else:
