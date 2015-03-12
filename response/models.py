@@ -4,7 +4,13 @@ from wechat_server.settings import DBNAME
 
 # Create your models here.
 
-connect(DBNAME)
+#connect(DBNAME)
+#connect(DBNAME, host="127.0.0.1", username="dbadmin", 
+#        password="wechatdb4supervessel")
+connect(DBNAME,
+        host='mongodb://dbadmin:wechatdb4supervessel@localhost/wechat_db',
+        port=27017)
+
 
 class Users(Document):
     wechat_user_id = StringField(max_length = 120, required = True)

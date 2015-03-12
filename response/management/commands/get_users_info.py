@@ -22,6 +22,7 @@ class Command(BaseCommand):
         logger.error("Failed to reach server")
         logger.error("Reasons ", e.reason)
     else:
+	logger.info("Got the information ")
         try:
             response = urllib2.urlopen(request)
         except URLError, e:
@@ -37,6 +38,10 @@ class Command(BaseCommand):
 
             users_info_json = json.loads(users_info)
             for user_info_json in users_info_json:
-                mc.set(str(user_info_json["username"]), user_info_json)
+		try:
+                    mc.set(str(user_info_json["username"]), user_info_json)
+		except:
+		    logger.error("Not supported characters in user name :" +
+			user_info_json["username"])
 
     
