@@ -1,18 +1,10 @@
 from django.db import models
 from mongoengine import *
 from wechat_server.settings import DBNAME
-import logging
 
 # Create your models here.
-logger = logging.getLogger('django')
-try:
-	logger.info('Connecting to wechat_db')
-	connect('wechat_db',
-        host='mongodb://dbadmin:wechatdb4supervessel@182.92.229.136/wechat_db',
-        port=27017)
-except:
-	logging.debug("DB remote connect error")
 
+connect(DBNAME)
 
 class Users(Document):
     wechat_user_id = StringField(max_length = 120, required = True)

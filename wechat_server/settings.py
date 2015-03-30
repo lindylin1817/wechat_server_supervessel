@@ -26,7 +26,10 @@ DBNAME = 'wechat_db'
 
 CRONJOBS = [
     ('0 */1 * * *', 'django.core.management.call_command', ['mycommand']),
-    ('0 */1 * * *', 'django.core.management.call_command', ['get_access_token']),   ('0 */1 * * *', 'django.core.management.call_command', ['get_users_info'])
+    ('0 */1 * * *', 'django.core.management.call_command', ['get_access_token']),   
+    ('0 */1 * * *', 'django.core.management.call_command', ['get_users_info']),
+    ('0 0 */1 * *', 'django.core.management.call_command', ['update_user_active_level']),
+    ('0 0 */1 * *', 'django.core.management.call_command', ['update_user_experience_points'])
 ]
 
 LOGGING = {
