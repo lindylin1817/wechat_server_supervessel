@@ -6,9 +6,12 @@ from models import virtualmachines
 import logging
 from elasticsearch import Elasticsearch, RequestsHttpConnection
 from time import time as timest
+import memcache
 import json
 
 logger = logging.getLogger('django')
+memCache_path = "127.0.0.1:11211"
+mc = memcache.Client([memCache_path],debug=True)
 
 def get_cur_cpu_usage(supervessel_account):
 
@@ -19,33 +22,19 @@ def get_cur_cpu_usage(supervessel_account):
 
     if not vm_list:
         return False
-    else:
-        try:
-            es = Elasticsearch([dict(host = "crl.ptopenlab.com", 
-			port = 8800, http_auth = ("admin", "p0weradm1n"), 
-			use_ssl=True, url_prefix = "elasticsearch")], 
-			connection_class = RequestsHttpConnection)
-        except:
-            logger.info("Cannot connect to remote elastic search server")
-            return False
-	else:
-	    logger.info("Connected to search server")
+    name_list = []
+    cpu_usage_list = []
+    for vm in vm_list:
+        cur_vm = None
+        cur_vm = mc.get(str(vm['vm_id']))
+        if cur_vm:
+            cpu_usage_list.append(cur_vm["cpu"])
+            name_list.append(vm['vm_name'])
 
-	now = timest() * 1000        
-        start_time = (timest() - 60 * 60) * 1000
-	end_time = now
-#        logger.info(str(start_time))
-#	logger.info(str(end_time))
-	name_list = []
-	cpu_usage_list = []
-	for vm in vm_list:
-	    cpu_usage_list.append(float(get_counter_val(es, vm['vm_id'], "cpu", 
-			start_time, end_time)/60.000/60.000))
-	    name_list.append(vm['vm_name'])
-
-	result['name_list'].append(name_list)
-	result['cpu_usage_list'].append(cpu_usage_list)	    
-        return result
+    result['name_list'].append(name_list)
+    result['cpu_usage_list'].append(cpu_usage_list)	
+    logger.info(result)
+    return result
     
 def make_query(start_time, end_time, resource_id, counter_name) : 
 #    now = timest() * 1000

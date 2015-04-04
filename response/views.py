@@ -75,175 +75,142 @@ def weixin(request):
     
 
     if wechat.check_signature(params['signature'],
-				params['timestamp'],
-				params['nonce']):
+                params['timestamp'],
+                params['nonce']):
         logger.info('correct msg')
     else:
-	logger.info('wrong msg')
+        logger.info('wrong msg')
 
     if request.body:
         xml = ET.fromstring(request.body)
         try:	
-	    content = xml.find("Content").text
+            content = xml.find("Content").text
         except AttributeError, e:
-	    content = None
+            content = None
 
         fromUserName = xml.find("ToUserName").text
         logger.info("ToUser:" + fromUserName)
-	toUserName = xml.find("FromUserName").text
+        toUserName = xml.find("FromUserName").text
 #        logger.info("FromUser: " + toUserName)
-	postTime = str(int(time.time()))
-	if not content:
-	    check_new_user(toUserName)
- 	    add_account_property(toUserName, USER_PRO)
-	    reply_msg = generate_message.gen_msg_txt(
-			toUserName, fromUserName, postTime, 
-			"欢迎来到 SuperVessel，按任意键可以查看您在SuperVessel上的资源状态")
-	    return HttpResponse(reply_msg)
+        postTime = str(int(time.time()))
+    else:
+        return HttpResponse("invalid request")
 
-	if content == "crl123super":
-	    check_new_user(toUserName)
-	    add_account_property(toUserName, MANAGE_PRO)    
-	    reply_msg = generate_message.gen_msg_txt(
-		    toUserName, fromUserName, postTime, 
-		    "我们已经把您添加到management组别")	    
-            return HttpResponse(reply_msg)
+    if not content:
+        check_new_user(toUserName)
+        add_account_property(toUserName, USER_PRO)
+        reply_msg = generate_message.gen_msg_txt(
+            toUserName, fromUserName, postTime, 
+            "欢迎来到 SuperVessel，按任意键可以查看您在SuperVessel上的资源状态")
+        return HttpResponse(reply_msg)
 
-	if content == "p0wer4bit":
-	    check_new_user(toUserName)
-	    add_account_property(toUserName, BIT_BIGDATA_TEACHER)
-	    reply_msg = generate_message.gen_msg_txt(
-		    toUserName, fromUserName, postTime,
-		    "您是北邮负责大数据的老师，发送 students ，可以获得学生大数据平台的使用统计邮件")
-	    return HttpResponse(reply_msg)
+    if content == "crl123super":
+        check_new_user(toUserName)
+        add_account_property(toUserName, MANAGE_PRO)    
+        reply_msg = generate_message.gen_msg_txt(
+            toUserName, fromUserName, postTime, 
+            "我们已经把您添加到management组别")	    
+        return HttpResponse(reply_msg)
 
-	if content=="getalluser":
-	    ACCESS_TOKEN = wechat.get_access_token()
-            try:
-		url = "https://api.weixin.qq.com/cgi-bin/user/get?access_token=" + ACCESS_TOKEN
-		logger.info(url)
-                request = urllib2.Request(url)
-	    except urllib2.HTTPError, e:
-        	logger.error("The server couldn't fulfill the request")
-	        logger.error("Error code is ", e.code)
-	    except urllib2.URLError, e:
-        	logger.error("Failed to reach server")
-	        logger.error("Reasons ", e.reason)
-	    else:
-        	try:
-	            response = urllib2.urlopen(request)
-	        except urllib2.URLError, e:
-        	    if hasattr(e, 'reason'):
-                	logger.error("We failed to reach a server.")
-	                logger.error("Reason: ", e.reason)
-        	    elif hasattr(e, 'code'):
-                	logger.error("The server couldn/'t fulfill the request.")
-	                logger.error("Error code: ", e.code)
-        	else:
-	            users_info = response.read()
-	            logger.info(users_info)
-	    	    reply_msg = generate_message.gen_msg_txt(
-		    	toUserName, fromUserName, postTime, 
-		    	"已经收到所有用户ID更新")	   
-	
-            	return HttpResponse(reply_msg)	    
-	    
+    if content == "p0wer4bit":
+        check_new_user(toUserName)
+        add_account_property(toUserName, BIT_BIGDATA_TEACHER)
+        reply_msg = generate_message.gen_msg_txt(
+            toUserName, fromUserName, postTime,
+            "您是北邮负责大数据的老师，发送 students ，可以获得学生大数据平台的使用统计邮件")
+        return HttpResponse(reply_msg)
 
+    if (content=="students") or (content=="Students") or (content=="students ") or (content=="Students "):
+        check_new_user(toUserName)
 
-
-	if (content=="students") or (content=="Students") or (content=="students ") or (content=="Students "):
-
-	    check_new_user(toUserName)
-
-	    if check_property(toUserName, BIT_BIGDATA_TEACHER):
-		generate_bit_students_file.gen_students_xls(bit_students_file_xls)
-		cur_user=Users.objects(wechat_user_id=toUserName).first()	
-		cur_supervessel_account=cur_user.supervessel_account
-		mail_subject = "Summary of resource activity status for BIT Big Data course"
-		mail_text = "本邮件是当前大数据课程中，学生作业资源使用的统计，数值仅供参考，谢谢！"
-		attached_files=[]
-		attached_files.append(bit_students_file_xls)
-		to_address=[]
-		to_address.append(cur_supervessel_account)
-		if cur_supervessel_account:
-		    send_email.send_mail(smtp_server, mail_user, mail_passwd, 
-				mail_from, to_address,
-				mail_subject, mail_text,
-				attached_files)
-		    reply_msg = generate_message.gen_msg_txt(
-		    	toUserName, fromUserName, postTime, 
-		    	"文件已经生成，并发送到您的邮箱: "+cur_supervessel_account)	   
-		else:
-		    reply_msg = generate_message.gen_msg_txt(
-		    	toUserName, fromUserName, postTime, 
-		    	"对不起，您还没有登记您的电子邮箱。")	   
-	
-            	return HttpResponse(reply_msg)	    
-	    else:
+        if check_property(toUserName, BIT_BIGDATA_TEACHER):
+            generate_bit_students_file.gen_students_xls(bit_students_file_xls)
+            cur_user=Users.objects(wechat_user_id=toUserName).first()	
+            cur_supervessel_account=cur_user.supervessel_account
+            mail_subject = "Summary of resource activity status for BIT Big Data course"
+            mail_text = "本邮件是当前大数据课程中，学生作业资源使用的统计，数值仅供参考，谢谢！"
+            attached_files=[]
+            attached_files.append(bit_students_file_xls)
+            to_address=[]
+            to_address.append(cur_supervessel_account)
+            if cur_supervessel_account:
+                send_email.send_mail(smtp_server, mail_user, mail_passwd, 
+                    mail_from, to_address,
+                    mail_subject, mail_text,
+                    attached_files)
                 reply_msg = generate_message.gen_msg_txt(
+		    	    toUserName, fromUserName, postTime, 
+		    	    "文件已经生成，并发送到您的邮箱: "+cur_supervessel_account)	   
+            else:
+                reply_msg = generate_message.gen_msg_txt(
+                    toUserName, fromUserName, postTime, 
+                    "对不起，您还没有登记您的电子邮箱。")	   
+	
+            return HttpResponse(reply_msg)	    
+
+        else:
+            reply_msg = generate_message.gen_msg_txt(
                         toUserName, fromUserName, postTime,
                         "对不起，您不是注册老师")
-                return HttpResponse(reply_msg)
+            return HttpResponse(reply_msg)
 
 	    
 
-        if re.search("@.*" , content):
-	    check_new_user(toUserName)
-	    add_supervessel_account(toUserName, content)    
-	    reply_msg = generate_message.gen_msg_txt(
-		    toUserName, fromUserName, postTime, 
-		    "我们已经把您的邮箱地址更新为："+content
-		    + " . 您向我们发送任意字符，就可以查看在SuperVessel云平台上面的资源使用情况。")	    
-            return HttpResponse(reply_msg)	    
+    if re.search("@.*" , content):
+        check_new_user(toUserName)
+        add_supervessel_account(toUserName, content)    
+        reply_msg = generate_message.gen_msg_txt(
+                toUserName, fromUserName, postTime, 
+                "我们已经把您的邮箱地址更新为："+content
+                + " . 您向我们发送任意字符，就可以查看在SuperVessel云平台上面的资源使用情况。")	    
+        return HttpResponse(reply_msg)	    
 	
-	else:
-	    if check_new_user(toUserName):
-		reply_msg = generate_message.gen_msg_txt(
-			toUserName, fromUserName, postTime,
-			"您还没有登记电子邮箱信息。请直接输入 "
-		        +"您在SuperVessel云上注册的电子邮箱地址。")
-	        return HttpResponse(reply_msg)
-	    else:
-		cur_user=Users.objects(wechat_user_id=toUserName).first()
-		cur_supervessel_account=cur_user.supervessel_account
-		if not cur_supervessel_account:
-		    reply_msg = generate_message.gen_msg_txt(
-			    toUserName, fromUserName, postTime,
-		            "您的邮箱信息是空的。如果您想在微信平台上获得SuperVessel"
-			    +" 云平台的增值服务，请直接输入您在SuperVessel云上的注册邮箱。"
-			    +" 如果您是新用户，请直接进入 http://ptopenlab.com")
-  		    return HttpResponse(reply_msg)
-      		else:
+    else:
+        if check_new_user(toUserName):
+            reply_msg = generate_message.gen_msg_txt(
+                    toUserName, fromUserName, postTime,
+			        "您还没有登记电子邮箱信息。请直接输入 "
+                    +"您在SuperVessel云上注册的电子邮箱地址。")
+            return HttpResponse(reply_msg)
+        else:
+            cur_user=Users.objects(wechat_user_id=toUserName).first()
+            cur_supervessel_account=cur_user.supervessel_account
+
+            if not cur_supervessel_account:
+                reply_msg = generate_message.gen_msg_txt(
+                    toUserName, fromUserName, postTime,
+                    "您的邮箱信息是空的。如果您想在微信平台上获得SuperVessel"
+                    +" 云平台的增值服务，请直接输入您在SuperVessel云上的注册邮箱。"
+                    +" 如果您是新用户，请直接进入 http://ptopenlab.com")
+                return HttpResponse(reply_msg)
+            else:
 #		    users_list=get_users_info()
 #	            put_users_memcache(users_list, mc)
-		    try:
-		        cur_user = mc.get(str(cur_supervessel_account))
-		    except:
-			cur_user = False
-			logger.info("User input has some problem")
+                try:
+                    cur_user = mc.get(str(cur_supervessel_account))
+                except:
+                    cur_user = False
+                    logger.info("User input has some problem")
 
-		    if cur_user:
-			logger.info(toUserName + " have registered")
-                        active_image_file = image_file_path + toUserName + postTime + ".png"
+            if cur_user:
+                logger.info(toUserName + " have registered")
+                active_image_file = image_file_path + toUserName + postTime + ".png"
 #			logger.info( active_image_file)
-			description = gen_news_description(cur_user, active_image_file)
-			cur_user_bluepoint = cur_user["balance"];
+                description = gen_news_description(cur_user, active_image_file)
+                cur_user_bluepoint = cur_user["balance"];
 
-			return HttpResponse(gen_user_news(
-				toUserName, fromUserName, postTime,
-				description))
-		    else:
-			logger.info(toUserName + " haven't registred")
-		        reply_msg = generate_message.gen_msg_txt(
-			    toUserName, fromUserName, postTime,
- 		            "您的邮箱地址是 "
-			    +cur_supervessel_account
-			    +" . 但未在 SuperVessel中注册."
-			    +" 如果您要更新它，请把您的邮箱地址在本微信公众号发送给我们。")
-	 	        return HttpResponse(reply_msg)
- 	    
-    else:
-	return HttpResponse("invalid request")
+                return HttpResponse(gen_user_news(
+                    toUserName, fromUserName, postTime,
+                    description))
+            else:
+                logger.info(toUserName + " haven't registred")
+                reply_msg = generate_message.gen_msg_txt(
+                    toUserName, fromUserName, postTime,
+                    "您的邮箱地址是 "
+                    +cur_supervessel_account
+                    +" . 但未在 SuperVessel中注册."
+                    +" 如果您要更新它，请把您的邮箱地址在本微信公众号发送给我们。")
+                return HttpResponse(reply_msg)
 
 
 def check_new_user(wechat_u_id):
@@ -349,7 +316,7 @@ def gen_news_description(current_user, image_file):
 			supervessel_account = current_user['username'])
     active_list = []
     for i in range(num_days):
-	active_list.append(0)
+        active_list.append(0)
     for vm in vm_list:
         vm_info = "虚拟机: " + vm.vm_name + "  当天活跃时间: " + str(vm.cpu_usage_list[num_days-1]) + "秒, 网络字节: " + str(vm.network_usage_list[num_days-1]) + "K\n"
 	for i in range(num_days):
