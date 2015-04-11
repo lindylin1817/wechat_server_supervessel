@@ -318,7 +318,7 @@ def gen_news_description(current_user, image_file):
     for i in range(num_days):
         active_list.append(0)
     for vm in vm_list:
-        vm_info = "虚拟机: " + vm.vm_name + "  当天活跃时间: " + str(vm.cpu_usage_list[num_days-1]) + "秒, 网络字节: " + str(vm.network_usage_list[num_days-1]) + "K\n"
+        vm_info = "虚拟机: " + vm.vm_name + "  当天活跃时间: " + str(vm.cpu_usage_list[num_days-1]) + "秒, 网络(out): " + str(int(vm.network_usage_out_list[num_days-1]/1000)) + "KB" + " 网络(in): " + str(int(vm.network_usage_in_list[num_days-1]/1000)) + "KB\n"
 	for i in range(num_days):
    	    active_list[i] = active_list[i] + vm.cpu_usage_list[i]
 #	description = description.join(vm_info)

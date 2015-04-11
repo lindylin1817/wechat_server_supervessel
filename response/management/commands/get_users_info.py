@@ -15,8 +15,11 @@ class Command(BaseCommand):
 
     try:
         mc = memcache.Client([memCache_path],debug=True)
+
         request = urllib2.Request(
                 "https://www.ptopenlab.com/cloudlab/api/user/account")
+        request.add_header('apikey','f851dab6-c235-440d-8759-6218618c295e')
+        
     except HTTPError, e:
         logger.error("The server couldn't fulfill the request")
         logger.error("Error code is ", e.code)
@@ -50,7 +53,8 @@ class Command(BaseCommand):
                         the_user = Users(wechat_user_id = "n/a",
                             supervessel_account = user_info_json["username"], 
                             user_property = USER_PRO,
-                            active_level = 0)
+                            active_level = 0,
+                            experience_points = 0)
                         the_user.save()
                         logger.info("saved new user" + user_info_json["username"])
                     else:

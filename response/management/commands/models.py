@@ -22,3 +22,4 @@ class virtualmachines(Document):
     cpu_usage_list = ListField(IntField(required = False))
 #    network_usage = IntField(required = False)
     network_usage_list = ListField(IntField(required = False))
+    start_date = StringField(max_length = 120, required = False)

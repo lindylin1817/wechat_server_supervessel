@@ -29,4 +29,6 @@ class virtualmachines(Document):
 #    cpu_usage = IntField(required = False)
     cpu_usage_list = ListField(IntField(required = False))
 #    network_usage = IntField(required = False)
-    network_usage_list = ListField(IntField(required = False))
+    network_usage_out_list = ListField(IntField(required = False))
+    network_usage_in_list = ListField(IntField(required = False))
+    start_date = ListField(IntField(required = False))
