@@ -218,7 +218,7 @@ def check_new_user(wechat_u_id):
     this_user = Users.objects(wechat_user_id=wechat_u_id)
     if not this_user:
 	this_user = Users(wechat_user_id = wechat_u_id, 
-		user_property = USER_PRO, active_leve = 0, experience_points = 0)
+		user_property = USER_PRO, active_level = 0, experience_points = 0)
 	this_user.save()
 	logger.info("Added new user")
         return True
